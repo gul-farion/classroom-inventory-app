@@ -1,0 +1,16 @@
+{
+  "flutter": {
+    "platforms": {
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "flutter-ernar",
+          "configurations": {
+            "macos": "1:579073175720:ios:44c909266836779eadd29d",
+            "web": "1:579073175720:web:61f4f2c492838c6aadd29d",
+            "windows": "1:579073175720:web:46e6b69118f557a0add29d"
+          }
+        }
+      }
+    }
+  }
+}
