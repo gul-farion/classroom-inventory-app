@@ -17,8 +17,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Admin Panel',
-      theme: ThemeData.dark(), // Темная тема
+      title: 'Учет проблем с оборудованиями колледжа',
+      theme: ThemeData.dark(),
       debugShowCheckedModeBanner: false,
       home: LoginScreen(),
     );
