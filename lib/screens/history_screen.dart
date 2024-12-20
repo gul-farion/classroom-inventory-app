@@ -5,8 +5,6 @@ class HistoryScreen extends StatelessWidget {
   HistoryScreen({super.key});
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  // Получение завершенных задач
   Stream<List<Map<String, dynamic>>> getCompletedTasks() {
     return _firestore
         .collection('tasks')

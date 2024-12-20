@@ -8,24 +8,21 @@ class RoomsScreen extends StatefulWidget {
 }
 
 class _RoomsScreenState extends State<RoomsScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
-  String? selectedFloor; // Выбранный этаж
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
+  String? selectedFloor; 
 
-  // Возврат к выбору этажа
   void _goBackToFloors() {
     setState(() {
       selectedFloor = null;
     });
   }
 
-  // Показ списка кабинетов
   void _selectFloor(String floor) {
     setState(() {
       selectedFloor = floor;
     });
   }
 
-  // Добавление новой задачи в Firestore
   Future<void> _addTaskToFirestore(String title, String description, String room) async {
     await _firestore.collection('tasks').add({
       "title": title,
@@ -35,7 +32,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
     });
   }
 
-  // Открытие модального окна для создания задачи
   void _createTask(BuildContext context, String room) {
     TextEditingController _titleController = TextEditingController();
     TextEditingController _descriptionController = TextEditingController();
@@ -96,7 +92,6 @@ class _RoomsScreenState extends State<RoomsScreen> {
     );
   }
 
-  // Добавление нового кабинета
   void _addRoom(String floor) {
     TextEditingController _roomController = TextEditingController();
     showDialog(
@@ -141,7 +136,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
             ? null
             : IconButton(
                 icon: const Icon(Icons.arrow_back),
-                onPressed: _goBackToFloors, // Вернуться к этажам
+                onPressed: _goBackToFloors, 
               ),
       ),
       body: selectedFloor == null
@@ -164,7 +159,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                   trailing: const Icon(Icons.add_task),
                   onTap: () {
                     if (room != null) {
-                      _createTask(context, room); // Создать задачу
+                      _createTask(context, room); 
                     }
                   },
                 );

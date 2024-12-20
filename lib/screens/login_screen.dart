@@ -5,25 +5,19 @@ import 'main_screen.dart';
 class LoginScreen extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
   LoginScreen({super.key});
-
-  // Метод для авторизации через Firebase
   Future<void> _login(BuildContext context) async {
     try {
-      // Попытка входа
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
 
-      // Если успешно, перенаправляем на главную страницу
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => MainScreen()),
       );
     } on FirebaseAuthException catch (e) {
-      // Если ошибка, показываем уведомление
       String message;
       switch (e.code) {
         case 'user-not-found':

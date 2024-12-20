@@ -11,7 +11,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // Получение всех задач
   Stream<List<Map<String, dynamic>>> getTasks({required bool isCompleted}) {
     return _firestore
         .collection('tasks')
@@ -31,7 +30,6 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Добавление новой задачи
   Future<void> addTask(String title, String body, String cabinet) async {
     await _firestore.collection('tasks').add({
       "title": title,
@@ -41,19 +39,16 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
-  // Обновление задачи (переключение статуса)
   Future<void> updateTaskStatus(String id, bool isCompleted) async {
     await _firestore.collection('tasks').doc(id).update({
       "isCompleted": isCompleted,
     });
   }
 
-  // Удаление задачи
   Future<void> deleteTask(String id) async {
     await _firestore.collection('tasks').doc(id).delete();
   }
 
-  // Открытие модального окна для добавления задачи
   void _addTask(BuildContext context) {
     TextEditingController titleController = TextEditingController();
     TextEditingController bodyController = TextEditingController();
@@ -63,22 +58,22 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: Text("Добавить задачу"),
+          title: const Text("Добавить задачу"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
-                decoration: InputDecoration(labelText: "Заголовок"),
+                decoration: const InputDecoration(labelText: "Заголовок"),
               ),
               TextField(
                 controller: bodyController,
-                decoration: InputDecoration(labelText: "Описание (необязательно)"),
+                decoration: const InputDecoration(labelText: "Описание (необязательно)"),
                 
               ),
               TextField(
                 controller: cabinetController,
-                decoration: InputDecoration(labelText: "Кабинет"),
+                decoration: const InputDecoration(labelText: "Кабинет"),
               ),
             ],
           ),
@@ -87,7 +82,7 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () {
                 Navigator.pop(context);
               },
-              child: Text("Отмена"),
+              child: const Text("Отмена"),
             ),
             TextButton(
               onPressed: () {
@@ -100,7 +95,7 @@ class _MainScreenState extends State<MainScreen> {
                   Navigator.pop(context);
                 }
               },
-              child: Text("Добавить"),
+              child: const Text("Добавить"),
             ),
           ],
         );
@@ -108,7 +103,6 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  // Открытие модального окна для просмотра деталей задачи
   void _openTaskDetails(BuildContext context, Map<String, dynamic> task) {
     showDialog(
       context: context,
@@ -120,7 +114,7 @@ class _MainScreenState extends State<MainScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text("Кабинет: ${task["cabinet"]}"),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               if (task["body"] != null && task["body"]!.isNotEmpty)
                 Text("Описание: ${task["body"]}"),
             ],
@@ -128,17 +122,17 @@ class _MainScreenState extends State<MainScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                updateTaskStatus(task["id"], true); // Завершить задачу
+                updateTaskStatus(task["id"], true); 
                 Navigator.pop(context);
               },
-              child: Text("Завершить"),
+              child: const Text("Завершить"),
             ),
             TextButton(
               onPressed: () {
-                deleteTask(task["id"]); // Удалить задачу
+                deleteTask(task["id"]);
                 Navigator.pop(context);
               },
-              child: Text("Удалить", style: TextStyle(color: Colors.red)),
+              child: const Text("Удалить", style: TextStyle(color: Colors.red)),
             ),
           ],
         );
@@ -150,12 +144,12 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("Главная"),
+        title: const Text("Главная"),
       ),
       drawer: Drawer(
         child: ListView(
           children: [
-            DrawerHeader(
+            const DrawerHeader(
               decoration: BoxDecoration(color: Colors.blue),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -174,8 +168,8 @@ class _MainScreenState extends State<MainScreen> {
               ),
             ),
             ListTile(
-              leading: Icon(Icons.room),
-              title: Text("Кабинеты"),
+              leading: const Icon(Icons.room),
+              title: const Text("Кабинеты"),
               onTap: () {
                 Navigator.push(
                   context,
@@ -184,8 +178,8 @@ class _MainScreenState extends State<MainScreen> {
               },
             ),
             ListTile(
-              leading: Icon(Icons.history),
-              title: Text("История"),
+              leading: const Icon(Icons.history),
+              title: const Text("История"),
               onTap: () {
                 Navigator.push(
                   context,
@@ -201,8 +195,7 @@ class _MainScreenState extends State<MainScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Секция "Исходящие задачи"
-            Text(
+            const Text(
               "Исходящие задачи",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -211,10 +204,10 @@ class _MainScreenState extends State<MainScreen> {
                 stream: getTasks(isCompleted: false),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text("Ошибка загрузки данных"));
+                    return const Center(child: Text("Ошибка загрузки данных"));
                   }
                   final tasks = snapshot.data ?? [];
                   return ListView.builder(
@@ -222,11 +215,11 @@ class _MainScreenState extends State<MainScreen> {
                     itemBuilder: (context, index) {
                       final task = tasks[index];
                       return Card(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
                           title: Text(task["title"]),
                           subtitle: Text("Кабинет: ${task["cabinet"]}"),
-                          trailing: Icon(
+                          trailing: const Icon(
                             Icons.warning,
                             color: Colors.orange,
                           ),
@@ -238,10 +231,9 @@ class _MainScreenState extends State<MainScreen> {
                 },
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
-            // Секция "История"
-            Text(
+            const Text(
               "История (выполненные задачи)",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
@@ -250,10 +242,10 @@ class _MainScreenState extends State<MainScreen> {
                 stream: getTasks(isCompleted: true),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator());
                   }
                   if (snapshot.hasError) {
-                    return Center(child: Text("Ошибка загрузки данных"));
+                    return const Center(child: Text("Ошибка загрузки данных"));
                   }
                   final tasks = snapshot.data ?? [];
                   return ListView.builder(
@@ -261,11 +253,11 @@ class _MainScreenState extends State<MainScreen> {
                     itemBuilder: (context, index) {
                       final task = tasks[index];
                       return Card(
-                        margin: EdgeInsets.symmetric(vertical: 8),
+                        margin: const EdgeInsets.symmetric(vertical: 8),
                         child: ListTile(
                           title: Text(task["title"]),
                           subtitle: Text("Кабинет: ${task["cabinet"]}"),
-                          trailing: Icon(
+                          trailing: const Icon(
                             Icons.check_circle,
                             color: Colors.green,
                           ),
@@ -281,7 +273,7 @@ class _MainScreenState extends State<MainScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _addTask(context),
-        child: Icon(Icons.add),
+        child: const Icon(Icons.add),
       ),
     );
   }
