@@ -1,62 +1,150 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../data/rooms_data.dart';
 
-class RoomsScreen extends StatefulWidget {
+class RoomDetailsScreen extends StatefulWidget {
+  final String roomId;
+
+  const RoomDetailsScreen({required this.roomId, Key? key}) : super(key: key);
+
   @override
-  _RoomsScreenState createState() => _RoomsScreenState();
+  _RoomDetailsScreenState createState() => _RoomDetailsScreenState();
 }
 
-class _RoomsScreenState extends State<RoomsScreen> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
-  String? selectedFloor; 
+class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  void _goBackToFloors() {
-    setState(() {
-      selectedFloor = null;
+  Future<void> logHistoryEvent({
+    required String event,
+    required String equipment,
+    required String room,
+    String details = '',
+  }) async {
+    await _firestore.collection('history').add({
+      "event": event,
+      "equipment": equipment,
+      "room": room,
+      "details": details,
+      "date": DateTime.now().toIso8601String(),
     });
   }
 
-  void _selectFloor(String floor) {
-    setState(() {
-      selectedFloor = floor;
+  Future<void> _updateEquipment(String equipmentName, int newQuantity) async {
+    await _firestore.collection('rooms').doc(widget.roomId).update({
+      equipmentName: newQuantity,
     });
+
+    await logHistoryEvent(
+      event: "Изменено",
+      equipment: equipmentName,
+      room: widget.roomId,
+      details: "Количество изменено на $newQuantity",
+    );
   }
 
-  Future<void> _addTaskToFirestore(String title, String description, String room) async {
-    await _firestore.collection('tasks').add({
-      "title": title,
-      "body": description,
-      "cabinet": room,
-      "isCompleted": false,
+  Future<void> _deleteEquipment(String equipmentName) async {
+    await _firestore.collection('rooms').doc(widget.roomId).update({
+      equipmentName: FieldValue.delete(),
     });
+
+    await logHistoryEvent(
+      event: "Удалено",
+      equipment: equipmentName,
+      room: widget.roomId,
+      details: "Оборудование удалено",
+    );
   }
 
-  void _createTask(BuildContext context, String room) {
-    TextEditingController _titleController = TextEditingController();
-    TextEditingController _descriptionController = TextEditingController();
+  void _editEquipmentQuantity(String equipmentName, int currentQuantity) {
+    TextEditingController _quantityController =
+        TextEditingController(text: currentQuantity.toString());
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text("Создать задачу"),
+          title: Text("Изменить количество: $equipmentName"),
+          content: TextField(
+            controller: _quantityController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: "Новое количество"),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text("Отмена"),
+            ),
+            TextButton(
+              onPressed: () {
+                final newQuantity =
+                    int.tryParse(_quantityController.text.trim());
+                if (newQuantity != null) {
+                  _updateEquipment(equipmentName, newQuantity).then((_) {
+                    Navigator.pop(context);
+                  });
+                }
+              },
+              child: const Text("Сохранить"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _updateOrAddEquipment(String equipmentName, int quantity) async {
+    final roomDoc = _firestore.collection('rooms').doc(widget.roomId);
+
+    final docSnapshot = await roomDoc.get();
+    final data = docSnapshot.data() as Map<String, dynamic>? ?? {};
+
+    if (data.containsKey(equipmentName)) {
+      await roomDoc.update({
+        equipmentName: quantity,
+      });
+
+      await logHistoryEvent(
+        event: "Изменено",
+        equipment: equipmentName,
+        room: widget.roomId,
+        details: "Количество изменено на $quantity",
+      );
+    } else {
+      await roomDoc.update({
+        equipmentName: quantity,
+      });
+
+      await logHistoryEvent(
+        event: "Добавлено",
+        equipment: equipmentName,
+        room: widget.roomId,
+        details: "Добавлено $quantity штук",
+      );
+    }
+  }
+
+  void _addEquipment() {
+    TextEditingController _nameController = TextEditingController();
+    TextEditingController _quantityController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Добавить оборудование"),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                "Кабинет: $room",
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
               TextField(
-                controller: _titleController,
-                decoration: const InputDecoration(labelText: "Заголовок задачи"),
+                controller: _nameController,
+                decoration:
+                    const InputDecoration(labelText: "Название оборудования"),
               ),
               TextField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(labelText: "Описание задачи"),
-                maxLines: 3,
+                controller: _quantityController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: "Количество"),
               ),
             ],
           ),
@@ -69,54 +157,13 @@ class _RoomsScreenState extends State<RoomsScreen> {
             ),
             TextButton(
               onPressed: () {
-                final title = _titleController.text.trim();
-                final description = _descriptionController.text.trim();
-                if (title.isNotEmpty) {
-                  _addTaskToFirestore(title, description, room).then((_) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Задача для $room создана")),
-                    );
-                    Navigator.pop(context);
-                  }).catchError((error) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("Ошибка: ${error.toString()}")),
-                    );
-                  });
-                }
-              },
-              child: const Text("Создать"),
-            ),
-          ],
-        );
-      },
-    );
-  }
+                final name = _nameController.text.trim();
+                final quantity = int.tryParse(_quantityController.text.trim());
 
-  void _addRoom(String floor) {
-    TextEditingController _roomController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Добавить кабинет на $floor"),
-          content: TextField(
-            controller: _roomController,
-            decoration: const InputDecoration(labelText: "Название кабинета"),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Отмена"),
-            ),
-            TextButton(
-              onPressed: () {
-                if (_roomController.text.isNotEmpty) {
-                  setState(() {
-                    roomsByFloor[floor]?.add(_roomController.text);
+                if (name.isNotEmpty && quantity != null) {
+                  _updateOrAddEquipment(name, quantity).then((_) {
+                    Navigator.pop(context);
                   });
-                  Navigator.pop(context);
                 }
               },
               child: const Text("Добавить"),
@@ -131,46 +178,55 @@ class _RoomsScreenState extends State<RoomsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(selectedFloor == null ? "Выберите этаж" : selectedFloor!),
-        leading: selectedFloor == null
-            ? null
-            : IconButton(
-                icon: const Icon(Icons.arrow_back),
-                onPressed: _goBackToFloors, 
-              ),
+        title: Text("Оборудование: ${widget.roomId}"),
       ),
-      body: selectedFloor == null
-          ? ListView.builder(
-              itemCount: floors.length,
-              itemBuilder: (context, index) {
-                return ListTile(
-                  title: Text(floors[index]),
-                  trailing: const Icon(Icons.arrow_forward),
-                  onTap: () => _selectFloor(floors[index]), // Выбрать этаж
-                );
-              },
-            )
-          : ListView.builder(
-              itemCount: roomsByFloor[selectedFloor]?.length ?? 0,
-              itemBuilder: (context, index) {
-                final room = roomsByFloor[selectedFloor]?[index];
-                return ListTile(
-                  title: Text(room ?? ""),
-                  trailing: const Icon(Icons.add_task),
-                  onTap: () {
-                    if (room != null) {
-                      _createTask(context, room); 
-                    }
-                  },
-                );
-              },
-            ),
-      floatingActionButton: selectedFloor == null
-          ? null
-          : FloatingActionButton(
-              onPressed: () => _addRoom(selectedFloor!),
-              child: const Icon(Icons.add),
-            ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: _firestore.collection('rooms').doc(widget.roomId).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data == null) {
+            return const Center(child: Text("Нет данных для этого кабинета."));
+          }
+
+          final data = snapshot.data!.data() as Map<String, dynamic>;
+
+          final equipment =
+              data.entries.where((entry) => entry.value is int).toList();
+
+          if (equipment.isEmpty) {
+            return const Center(
+                child: Text("В этом кабинете нет оборудования."));
+          }
+
+          return ListView.builder(
+            itemCount: equipment.length,
+            itemBuilder: (context, index) {
+              final item = equipment[index];
+              final name = item.key;
+              final quantity = item.value as int;
+
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                child: ListTile(
+                  title: Text(name),
+                  subtitle: Text("Количество: $quantity"),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red),
+                    onPressed: () => _deleteEquipment(name),
+                  ),
+                  onTap: () => _editEquipmentQuantity(name, quantity),
+                ),
+              );
+            },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _addEquipment,
+        child: const Icon(Icons.add),
+      ),
     );
   }
 }

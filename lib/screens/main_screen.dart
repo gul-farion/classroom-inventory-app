@@ -29,117 +29,22 @@ class _MainScreenState extends State<MainScreen> {
       }).toList();
     });
   }
-
-  Future<void> addTask(String title, String body, String cabinet) async {
-    await _firestore.collection('tasks').add({
-      "title": title,
-      "body": body,
-      "cabinet": cabinet,
-      "isCompleted": false,
-    });
-  }
-
-  Future<void> updateTaskStatus(String id, bool isCompleted) async {
-    await _firestore.collection('tasks').doc(id).update({
-      "isCompleted": isCompleted,
-    });
-  }
-
-  Future<void> deleteTask(String id) async {
-    await _firestore.collection('tasks').doc(id).delete();
-  }
-
-  void _addTask(BuildContext context) {
-    TextEditingController titleController = TextEditingController();
-    TextEditingController bodyController = TextEditingController();
-    TextEditingController cabinetController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text("Добавить задачу"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: "Заголовок"),
-              ),
-              TextField(
-                controller: bodyController,
-                decoration: const InputDecoration(labelText: "Описание (необязательно)"),
-                
-              ),
-              TextField(
-                controller: cabinetController,
-                decoration: const InputDecoration(labelText: "Кабинет"),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("Отмена"),
-            ),
-            TextButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty && cabinetController.text.isNotEmpty) {
-                  addTask(
-                    titleController.text,
-                    bodyController.text,
-                    cabinetController.text,
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text("Добавить"),
-            ),
-          ],
-        );
-      },
+  void _navigateToRoomDetails(BuildContext context, String roomId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RoomDetailsScreen(roomId: roomId),
+      ),
     );
   }
-
-  void _openTaskDetails(BuildContext context, Map<String, dynamic> task) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(task["title"]),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text("Кабинет: ${task["cabinet"]}"),
-              const SizedBox(height: 8),
-              if (task["body"] != null && task["body"]!.isNotEmpty)
-                Text("Описание: ${task["body"]}"),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                updateTaskStatus(task["id"], true); 
-                Navigator.pop(context);
-              },
-              child: const Text("Завершить"),
-            ),
-            TextButton(
-              onPressed: () {
-                deleteTask(task["id"]);
-                Navigator.pop(context);
-              },
-              child: const Text("Удалить", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
+  void _navigateToHistory(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HistoryScreen(),
+      ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -161,119 +66,47 @@ class _MainScreenState extends State<MainScreen> {
                   ),
                   SizedBox(height: 10),
                   Text(
-                    "Admin",
+                    "Админ",
                     style: TextStyle(color: Colors.white, fontSize: 18),
                   ),
                 ],
               ),
             ),
             ListTile(
-              leading: const Icon(Icons.room),
-              title: const Text("Кабинеты"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => RoomsScreen()),
-                );
-              },
-            ),
-            ListTile(
               leading: const Icon(Icons.history),
               title: const Text("История"),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => HistoryScreen()),
-                );
-              },
+              onTap: () => _navigateToHistory(context),
             ),
           ],
         ),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Исходящие задачи",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: getTasks(isCompleted: false),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return const Center(child: Text("Ошибка загрузки данных"));
-                  }
-                  final tasks = snapshot.data ?? [];
-                  return ListView.builder(
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text(task["title"]),
-                          subtitle: Text("Кабинет: ${task["cabinet"]}"),
-                          trailing: const Icon(
-                            Icons.warning,
-                            color: Colors.orange,
-                          ),
-                          onTap: () => _openTaskDetails(context, task),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            const Text(
-              "История (выполненные задачи)",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            Expanded(
-              child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: getTasks(isCompleted: true),
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (snapshot.hasError) {
-                    return const Center(child: Text("Ошибка загрузки данных"));
-                  }
-                  final tasks = snapshot.data ?? [];
-                  return ListView.builder(
-                    itemCount: tasks.length,
-                    itemBuilder: (context, index) {
-                      final task = tasks[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(vertical: 8),
-                        child: ListTile(
-                          title: Text(task["title"]),
-                          subtitle: Text("Кабинет: ${task["cabinet"]}"),
-                          trailing: const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                          ),
-                        ),
-                      );
-                    },
-                  );
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _addTask(context),
-        child: const Icon(Icons.add),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _firestore.collection('rooms').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(child: Text("Нет данных о кабинетах"));
+          }
+          final rooms = snapshot.data!.docs;
+          return ListView.builder(
+            itemCount: rooms.length,
+            itemBuilder: (context, index) {
+              final roomDoc = rooms[index];
+              final roomId = roomDoc.id;
+              final data = roomDoc.data() as Map<String, dynamic>;
+              final roomName = data['name'] ?? 'Без названия';
+              return ListTile(
+                title: Text(roomName),
+                subtitle: Text("ID: $roomId"),
+                trailing: const Icon(Icons.arrow_forward),
+                onTap: () =>
+                    _navigateToRoomDetails(context, roomId), 
+              );
+            },
+          );
+        },
       ),
     );
   }
